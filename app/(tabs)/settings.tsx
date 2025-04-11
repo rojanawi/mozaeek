@@ -1,140 +1,12 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Grid2x2 as Grid, TriangleAlert as AlertTriangle } from 'lucide-react-native';
+import { Settings, Grid2x2 as Grid } from 'lucide-react-native';
 import { useGrid } from '@/context/GridContext';
-import Animated, { 
-  useAnimatedStyle, 
-  withSpring,
-  useSharedValue,
-  withTiming
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-
-interface GridPreviewProps {
-  width: number;
-  height: number;
-}
-
-function WarningModal({ 
-  visible, 
-  onConfirm, 
-  onCancel 
-}: { 
-  visible: boolean; 
-  onConfirm: () => void; 
-  onCancel: () => void;
-}) {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalIcon}>
-            <AlertTriangle color="#FFB020" size={32} />
-          </View>
-          <Text style={styles.modalTitle}>Warning</Text>
-          <Text style={styles.modalMessage}>
-            Changing the grid size will delete all pictures currently placed on the grid. This action cannot be undone.
-          </Text>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalButtonCancel]} 
-              onPress={onCancel}
-            >
-              <Text style={styles.modalButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalButtonContinue]} 
-              onPress={onConfirm}
-            >
-              <Text style={[styles.modalButtonText, styles.modalButtonTextContinue]}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function GridPreview({ width, height }: GridPreviewProps) {
-  const cells = Array(width * height).fill(null);
-  
-  return (
-    <View style={styles.previewContainer}>
-      <View style={[styles.preview, { aspectRatio: width / height }]}>
-        {cells.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.previewCell,
-              {
-                width: `${100 / width}%`,
-                height: `${100 / height}%`,
-              },
-            ]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function Slider({ 
-  value, 
-  onChange, 
-  label 
-}: { 
-  value: number; 
-  onChange: (value: number) => void;
-  label: string;
-}) {
-  const translateX = useSharedValue(((value - 1) / 7) * (300 - 24));
-  const isDragging = useSharedValue(false);
-
-  const gesture = Gesture.Pan()
-    .onBegin(() => {
-      isDragging.value = true;
-    })
-    .onUpdate((e) => {
-      let newX = e.absoluteX - 40;
-      newX = Math.max(0, Math.min(newX, 300 - 24));
-      translateX.value = newX;
-      
-      const newValue = Math.round((newX / (300 - 24)) * 7) + 1;
-      onChange(newValue);
-    })
-    .onFinalize(() => {
-      isDragging.value = false;
-    });
-
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: withSpring(translateX.value) }],
-    backgroundColor: withTiming(isDragging.value ? '#007AFF' : '#666'),
-  }));
-
-  return (
-    <View style={styles.sliderContainer}>
-      <Text style={styles.sliderLabel}>{label}</Text>
-      <View style={styles.sliderContent}>
-        <View style={styles.sliderTrack} />
-        <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.sliderThumb, thumbStyle]}>
-            <Text style={styles.sliderValue}>{value}</Text>
-          </Animated.View>
-        </GestureDetector>
-      </View>
-      <View style={styles.sliderMarkers}>
-        <Text style={styles.markerText}>1</Text>
-        <Text style={styles.markerText}>8</Text>
-      </View>
-    </View>
-  );
-}
+import { GridPreview } from '@/components/Settings/GridPreview';
+import { Slider } from '@/components/Settings/Slider';
+import { WarningModal } from '@/components/Settings/WarningModal';
+import { BackgroundSelector } from '@/components/Settings/BackgroundSelector';
 
 export default function SettingsScreen() {
   const { dimensions, setDimensions: updateDimensions, hasPhotos } = useGrid();
@@ -225,6 +97,10 @@ export default function SettingsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={[styles.card, styles.backgroundCard]}>
+          <BackgroundSelector />
+        </View>
       </ScrollView>
 
       <WarningModal
@@ -269,6 +145,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    marginBottom: 20,
+  },
+  backgroundCard: {
+    padding: 0,
   },
   section: {
     marginBottom: 24,
@@ -292,48 +172,6 @@ const styles = StyleSheet.create({
   slidersContainer: {
     marginBottom: 24,
   },
-  sliderContainer: {
-    marginBottom: 20,
-  },
-  sliderLabel: {
-    color: '#fff',
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  sliderContent: {
-    height: 40,
-    justifyContent: 'center',
-  },
-  sliderTrack: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#333',
-    borderRadius: 1,
-  },
-  sliderThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#666',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sliderValue: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sliderMarkers: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  markerText: {
-    color: '#666',
-    fontSize: 12,
-  },
   successText: {
     color: '#4CAF50',
     fontSize: 14,
@@ -348,24 +186,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  previewContainer: {
-    backgroundColor: '#333',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  preview: {
-    width: '100%',
-    maxWidth: 300,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  previewCell: {
-    backgroundColor: '#666',
-    borderWidth: 1,
-    borderColor: '#444',
-    borderRadius: 4,
-  },
   saveButton: {
     backgroundColor: '#007AFF',
     borderRadius: 8,
@@ -379,62 +199,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  modalIcon: {
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
-  },
-  modalMessage: {
-    fontSize: 16,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: '#333',
-  },
-  modalButtonContinue: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FFB020',
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  modalButtonTextContinue: {
-    color: '#FFB020',
   },
 });

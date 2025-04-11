@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "orientation": "portrait"
+    },
+    "android": {
+      "orientation": "portrait"
     },
     "web": {
       "bundler": "metro",
